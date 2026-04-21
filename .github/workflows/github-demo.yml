@@ -1,0 +1,39 @@
+#Generate Peer Review File
+name: SimDiff Peer Review File Generation
+
+on:
+  push:
+    branches:
+      - '**'   # all branches
+  pull_request:
+
+jobs:
+  simdiff_peer_review:
+    name: Generate SimDiff Peer Review File
+    runs-on: self-hosted   # your Windows self-hosted runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  
+
+      # ============ Set up DiffTool ===============
+      - name: Prepare SimDiff command
+        shell: 'powershell -ExecutionPolicy Bypass -File {0}'
+        run: |
+          git config --local difftool.simdiff.cmd '\"C:/Program Files/EnSoft/SimDiff Automation/sd4.exe\" -l \"$LOCAL\" -r \"$REMOTE\" -export aero_radmod_peerreview.html'
+
+      # ============ Invoke SimDiff ===============
+      - name: Run SimDiff comparison
+        shell: 'powershell -ExecutionPolicy Bypass -File {0}'
+        run: |
+          Write-Host "Comparing with SimDiff..."
+          git difftool -y -t simdiff HEAD~1 HEAD .\aero_radmod.slx
+
+      # ============ Publish Artifact ===============
+      - name: Upload SimDiff Peer Review File
+        uses: actions/upload-artifact@v4
+        with:
+          name: aero_radmod_peerreview
+          path: aero_radmod_peerreview.html
